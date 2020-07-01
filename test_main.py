@@ -1,7 +1,9 @@
 import pytest
 import main
 import numpy as np
-from shapely.geometry import MultiPoint
+from shapely.geometry import MultiPoint, Point
+from hypothesis import given
+import hypothesis.strategies as st
 
 # Variable creation needed for testing
 df = main.read_shp('Meetvak/Meetvakken_WGS84.shp')
@@ -27,11 +29,68 @@ def test_get_begin_returns_first_coordinate_when_given_two_coordinates():
         "The coordinate returned by get_begin() is not equal to the first coordinate."
 
 
+@given(st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000))
+def test_get_end_returns_second_coordinate_when_given_two_coordinates_random(x1, x2, y1, y2):
+    m = MultiPoint([(x1, x2), (y1, y2)])
+    assert (main.get_end(m) == f"POINT ({y1} {y2})"), \
+        "The Coordinate returned by get_end() is not the the second coordinate."
+
+
+@given(st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000))
+def test_get_begin_returns_first_coordinate_when_given_two_coordinates_random(x1, x2, y1, y2):
+    m = MultiPoint([(x1, x2), (y1, y2)])
+    assert (main.get_begin(m) == f"POINT ({x1} {x2})"), \
+        "The Coordinate returned by get_end() is not the the second coordinate."
+
+
 # Function should not accept inputs with less than two coordinates
 def test_get_end_input_has_less_than_two_coordinates():
     m = MultiPoint([(0, 0)])
     with pytest.raises(Exception):
         main.get_end(m)
+
+
+@given(st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=-1000000, max_value=1000000))
+# Function should not accept inputs with less than two coordinates
+def test_get_end_input_has_less_than_two_coordinates_random(x, y):
+    m = MultiPoint([(x, y)])
+    with pytest.raises(Exception):
+        main.get_end(m)
+
+
+@given(st.integers(min_value=-1000000, max_value=1000000))
+# Function should return the angle between two identical points as 0.
+def test_AngleBtw2Points_same_points(x):
+    point = [x, x]
+    assert main.AngleBtw2Points(point, point) == 0, \
+        "The AngleBtw2Points function does not return 0 for two identical points."
+
+
+@given(st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=1, max_value=1000000))
+# Function should return the angle between two non identical points always bigger than 0
+def test_AngleBtw2Points_different_points_1(x, y):
+    point_a = [x, x]
+    point_b = [x+y, x+y]
+    assert main.AngleBtw2Points(point_a, point_b) > 0, \
+        "The AngleBtw2Points function does not return > 0 for two non identical points."
+
+
+@given(st.integers(min_value=-1000000, max_value=1000000),
+       st.integers(min_value=1, max_value=1000000))
+# Function should return the angle between two non identical points always smaller than 0
+def test_AngleBtw2Points_different_points_2(x, y):
+    point_a = [x+y, x+y]
+    point_b = [x, x]
+    assert main.AngleBtw2Points(point_a, point_b) < 0, \
+        "The AngleBtw2Points function does not return < 0 for two non identical points."
 
 
 # Function should set the id column as DataFrame
@@ -85,7 +144,8 @@ def test_generate_artificial_lines_all_lines_in_artificial_lines_have_begin_poin
     art_in_without_begin = artificial_lines.index.get_level_values(1).to_numpy(copy=True)
     art_in_without_begin = art_in_without_begin.reshape(art_in_without_begin.shape[0], 1)
     lines_without_begin_array = lines_without_begin.index.to_numpy(copy=True)
-    art_in_without_begin = np.apply_along_axis(lambda x: np.any(lines_without_begin_array == x), 1, art_in_without_begin)
+    art_in_without_begin = np.apply_along_axis(lambda x: np.any(lines_without_begin_array == x), 1,
+                                               art_in_without_begin)
     assert (np.all(art_in_without_begin)), \
         "Not all artificial lines have their end point in lines without begin."
 
@@ -96,6 +156,7 @@ def test_convert_to_id():
     lines_without_end_array = lines_without_end_array.reshape(lines_without_end_array.shape[0], 1)
     global lines_without_begin_ids
     lines_without_begin_ids = lines_without_begin_ids.reshape(lines_without_begin_ids.shape[0], 1)
-    id_in_lines_without_end = np.apply_along_axis(lambda x: np.any(lines_without_end_array == x), 1, lines_without_begin_ids)
+    id_in_lines_without_end = np.apply_along_axis(lambda x: np.any(lines_without_end_array == x), 1,
+                                                  lines_without_begin_ids)
     assert (np.all(id_in_lines_without_end)), \
         "Not all id's can be found int lines without ends."

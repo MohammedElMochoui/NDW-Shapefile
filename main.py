@@ -240,8 +240,11 @@ def main(file_path, angle_threshold, output_path):
     result_lines = prepare_df_for_concatenation(result_lines, result_df)
     result_df = result_df.append(result_lines, ignore_index=True)
 
+    print(len(result_lines))
+
     # write artificial lines to a new shapefile.
     write_shapefile(result_df, output_path)
+
 
 
 if __name__ == "__main__":
