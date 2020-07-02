@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--d', '--DEGREE',
                         type=int,
-                        default=5,
+                        default=7,
                         help="The acceptable angle that the artificial line makes with the other line. \n"
                              "Default value = 5",
                         metavar='d')
